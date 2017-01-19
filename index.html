@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+  <head>
+    <title>A Whimsical Operating System</title>
+    <script src="/system.js"></script>
+    <script>
+      function save() {
+        const code = document.forms.code.init.value;
+        console.log(code);
+        localStorage.setItem('/system/init', code);
+      }
+      function sysInit() {
+        new System(this).init().catch(function(err) {
+          alert(err.message);
+        });
+      }
+    </script>
+  </head>
+  <body>
+    <form action="javascript:void(0)" id="code">
+      <fieldset>
+        <legend>/system/init</legend>
+        <textarea rows="24" cols="80" id="init">
+alert('Hello, world!');
+        </textarea>
+      </fieldset>
+      <br>
+      <button onclick="localStorage.clear()">Clear</button>
+      <button onclick="save()">Save</button>
+      <button onclick="sysInit()">Init</button>
+    </form>
+  </body>
+</html>
