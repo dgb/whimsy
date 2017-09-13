@@ -6,11 +6,19 @@
     <script>
       function save() {
         const code = document.forms.code.init.value;
-        console.log(code);
         localStorage.setItem('/system/init', code);
       }
-      function sysInit() {
-        new System(this).init().catch(function(err) {
+      function run() {
+        const sys = new System(this);
+        const out = document.getElementById('output');
+        sys.onLog((lines) => {
+          lines.forEach((line) => {
+            out.innerHTML += line;
+            out.innerHTML += "\n";
+
+          });
+        });
+        sys.run('/system/init').catch(function(err) {
           alert(err.message);
         });
       }
@@ -20,14 +28,17 @@
     <form action="javascript:void(0)" id="code">
       <fieldset>
         <legend>/system/init</legend>
-        <textarea rows="24" cols="80" id="init">
-alert('Hello, world!');
+        <textarea style="float:left;" rows="24" cols="80" id="init">
+setInterval(function() {
+  stdout.log('Hello, world!');
+}, 1000);
         </textarea>
+        <pre style="float:left; margin-left: 1em;" id="output"></pre>
       </fieldset>
       <br>
       <button onclick="localStorage.clear()">Clear</button>
       <button onclick="save()">Save</button>
-      <button onclick="sysInit()">Init</button>
+      <button onclick="run()">Run</button>
     </form>
   </body>
 </html>

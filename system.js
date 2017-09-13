@@ -2,7 +2,17 @@ class NotFoundError extends Error {}
 
 class File {
   constructor(contents) {
-    this.contents = contents;
+    const header = `
+      (function() {
+        stdout = {
+          log: function(output) {
+            postMessage([output]);
+          }
+        }
+    `
+    const footer = '})();'
+    const blob = new Blob([header, contents, footer], {type: 'application/javascript'});
+    this.url = URL.createObjectURL(blob);
   }
 }
 
@@ -24,22 +34,54 @@ class FileSystem {
   }
 }
 
+class Process {
+  constructor(file) {
+    this.file = file;
+    this.stream = {
+      subscribers: [],
+      log: function(output) {
+        this.subscribers.forEach((sub) => sub.call(this, output));
+      }
+    }
+  }
+
+  run() {
+    const worker = new Worker(this.file.url);
+    worker.addEventListener('message', this._handleMessage.bind(this));
+  }
+
+  _handleMessage(msg) {
+    this.stream.log(msg.data);
+  }
+
+  onLog(cb) {
+    this.stream.subscribers.push(cb);
+  }
+}
+
 class System {
   constructor(context) {
     this.context = context;
-    this.initPath = '/system/init';
+    this.subscribers = [];
   }
 
-  init() {
+  run(path) {
     const localStorage = this.context.localStorage;
     const fs = new FileSystem(localStorage);
 
-    return fs.read(this.initPath)
-      .then((file) => this._runInitProcess(file))
+    return fs.read(path)
+      .then((file) => {
+        const proc = new Process(file);
+        proc.onLog(this._handleLog.bind(this));
+        proc.run()
+      });
   }
 
-  _runInitProcess(file) {
-    const context = this.context;
-    new Function(file.contents).bind(context)();
+  onLog(cb) {
+    this.subscribers.push(cb);
+  }
+
+  _handleLog(lines) {
+    this.subscribers.forEach((sub) => sub.call(this, lines));
   }
 }
